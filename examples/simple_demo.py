@@ -67,7 +67,7 @@ def main() -> int:
     
     print("Creating WDVA instance...")
     wdva = WDVA()
-    print(f"✓ Initialized: {wdva}")
+    print(f"[OK] Initialized: {wdva}")
     
     # ─────────────────────────────────────────────────────────────────────────
     # Step 2: Train (simplified)
@@ -83,7 +83,7 @@ def main() -> int:
         max_samples=50
     )
     
-    print(f"✓ Training result:")
+    print("[OK] Training result:")
     print(f"    Adapter path: {result.adapter_path}")
     print(f"    Encryption key: {result.encryption_key_hex[:16]}... (keep secret!)")
     print(f"    Documents: {result.num_documents}")
@@ -99,9 +99,9 @@ def main() -> int:
     # For this demo, we just demonstrate the API
     try:
         wdva.load(result.adapter_path, result.encryption_key_hex)
-        print(f"✓ Adapter loaded: {wdva}")
+        print(f"[OK] Adapter loaded: {wdva}")
     except FileNotFoundError:
-        print("⚠ Adapter file not found (expected in demo)")
+        print("[WARN] Adapter file not found (expected in demo)")
         print("  In production, load() requires an actual trained adapter file.")
     
     # ─────────────────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ def main() -> int:
         print(f"  Question: What is 2 + 2?")
         print(f"  Response: {response}")
     except Exception as e:
-        print(f"⚠ Query failed: {e}")
+        print(f"[WARN] Query failed: {e}")
         print("  (Model loading may require additional dependencies)")
     
     # ─────────────────────────────────────────────────────────────────────────
@@ -139,9 +139,9 @@ def main() -> int:
     print()
     print("After deletion:")
     print(f"  Status: {wdva.status.value}")
-    print("  ✓ Encryption key destroyed")
-    print("  ✓ Adapter is now cryptographically inaccessible")
-    print("  ✓ Even if the file exists, it cannot be decrypted")
+    print("  [OK] Encryption key destroyed")
+    print("  [OK] Adapter is now cryptographically inaccessible")
+    print("  [OK] Even if the file exists, it cannot be decrypted")
     
     # ─────────────────────────────────────────────────────────────────────────
     # Summary

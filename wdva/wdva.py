@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -198,8 +199,7 @@ class WDVA:
             output_dir = Path("./adapters")
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Use first document name or timestamp
-            import time
+            # Use timestamp for unique filename
             timestamp = int(time.time())
             output_path = output_dir / f"adapter_{timestamp}.wdva"
         else:

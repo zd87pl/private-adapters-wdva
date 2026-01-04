@@ -13,6 +13,7 @@ Licensed under the Apache License, Version 2.0
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 from pathlib import Path
@@ -31,35 +32,43 @@ os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
 
 
 # =============================================================================
-# Backend Detection (lazy, on first use)
+# Backend Detection (cached and thread-safe)
 # =============================================================================
 
-_mlx_available: Optional[bool] = None
-_torch_available: Optional[bool] = None
-
+@functools.cache
 def _check_mlx() -> bool:
-    """Check if MLX is available (lazy evaluation)."""
-    global _mlx_available
-    if _mlx_available is None:
-        try:
-            import mlx.core  # noqa: F401
-            from mlx_lm import generate, load  # noqa: F401
-            _mlx_available = True
-        except ImportError:
-            _mlx_available = False
-    return _mlx_available
+    """
+    Check if MLX is available.
 
+    Uses functools.cache for thread-safe memoization.
+
+    Returns:
+        True if MLX and mlx-lm are available, False otherwise.
+    """
+    try:
+        import mlx.core  # noqa: F401
+        from mlx_lm import generate, load  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+@functools.cache
 def _check_torch() -> bool:
-    """Check if PyTorch is available (lazy evaluation)."""
-    global _torch_available
-    if _torch_available is None:
-        try:
-            import torch  # noqa: F401
-            from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: F401
-            _torch_available = True
-        except ImportError:
-            _torch_available = False
-    return _torch_available
+    """
+    Check if PyTorch is available.
+
+    Uses functools.cache for thread-safe memoization.
+
+    Returns:
+        True if PyTorch and transformers are available, False otherwise.
+    """
+    try:
+        import torch  # noqa: F401
+        from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 
 # =============================================================================
@@ -204,7 +213,7 @@ class LocalInference:
                 logger.info("Loading MLX model: %s", model_name)
                 self._model, self._tokenizer = mlx_load(model_name)
                 self._model_name = model_name
-                logger.info("✓ Successfully loaded: %s", model_name)
+                logger.info("Successfully loaded: %s", model_name)
                 return True
             except Exception as e:
                 logger.warning("Failed to load %s: %s", model_name, e)
@@ -253,7 +262,7 @@ class LocalInference:
             self._model = self._model.to(self._device)
         
         self._model.eval()
-        logger.info("✓ PyTorch model loaded on %s", self._device)
+        logger.info("PyTorch model loaded on %s", self._device)
         return True
     
     def query_with_adapter(
@@ -320,9 +329,10 @@ class LocalInference:
         finally:
             # Clear adapter from memory
             # Note: Python's del doesn't guarantee secure memory clearing,
-            # but it marks the memory for garbage collection
-            if 'adapter_weights' in dir():
-                del adapter_weights
+            # but it marks the memory for garbage collection.
+            # We explicitly set to None to ensure cleanup regardless of
+            # exception state.
+            adapter_weights = None  # type: ignore[assignment]
             self._loaded_adapter_name = None
             logger.debug("Adapter cleared from memory")
     

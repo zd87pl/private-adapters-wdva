@@ -1,0 +1,207 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wdva"
+version = "1.0.0"
+description = "Weight-Delta Vault Adapters - Secure & Private AI for Everyone"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [
+    { name = "Enclave Team", email = "team@enclave.ai" }
+]
+maintainers = [
+    { name = "Enclave Team", email = "team@enclave.ai" }
+]
+keywords = [
+    "wdva",
+    "privacy",
+    "ai",
+    "machine-learning",
+    "encryption",
+    "dora",
+    "lora",
+    "adapter",
+    "llm",
+    "private-ai",
+    "secure-ai",
+    "cryptography",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pycryptodome>=3.19.0",
+    "cryptography>=41.0.0",
+    "safetensors>=0.4.0",
+]
+
+[project.optional-dependencies]
+mlx = [
+    "mlx>=0.18.0",
+    "mlx-lm>=0.1.0",
+]
+torch = [
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+]
+arxiv = [
+    "requests>=2.31.0",
+    "PyPDF2>=3.0.0",
+]
+compression = [
+    "zstandard>=0.22.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "types-requests>=2.31.0",
+]
+all = [
+    "mlx>=0.18.0",
+    "mlx-lm>=0.1.0",
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+    "requests>=2.31.0",
+    "PyPDF2>=3.0.0",
+    "zstandard>=0.22.0",
+    "hf-transfer>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/enclave-ai/wdva-boilerplate"
+Documentation = "https://github.com/enclave-ai/wdva-boilerplate#readme"
+Repository = "https://github.com/enclave-ai/wdva-boilerplate.git"
+Issues = "https://github.com/enclave-ai/wdva-boilerplate/issues"
+Changelog = "https://github.com/enclave-ai/wdva-boilerplate/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/wdva",
+    "/tests",
+    "/LICENSE",
+    "/README.md",
+    "/CHANGELOG.md",
+]
+exclude = [
+    "/.github",
+    "/docs",
+    "/examples",
+    "/notebooks",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["wdva"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "S",      # flake8-bandit (security)
+    "RUF",    # Ruff-specific rules
+]
+ignore = [
+    "S101",   # assert used (fine in tests)
+    "S311",   # pseudo-random (we use secrets for crypto)
+    "B008",   # function call in default argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "ARG"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "mlx.*",
+    "mlx_lm.*",
+    "torch.*",
+    "transformers.*",
+    "safetensors.*",
+    "Crypto.*",
+    "zstandard.*",
+    "PyPDF2.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks integration tests",
+]
+
+[tool.coverage.run]
+source = ["wdva"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+show_missing = true
