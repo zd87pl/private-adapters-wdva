@@ -51,11 +51,34 @@ python examples/simple_demo.py
 
 ## 🎯 Use Cases
 
-- **Personal Knowledge Base**: Train on your notes, documents, emails
-- **Private Research**: Query research papers without sharing them
-- **Medical Records**: Personalized health AI without exposing sensitive data
-- **Legal Documents**: Private legal research assistant
-- **Code Documentation**: Personal coding assistant trained on your codebase
+### For Consumers
+
+- **Personal Knowledge Base**: Train on your notes, documents, emails - create your own AI that knows everything you know
+- **Private Research**: Query research papers, books, and articles without sharing them with any cloud service
+- **Family Documents**: Organize and search family records, recipes, medical history privately
+- **Creative Writing**: Train on your writing style for personalized assistance without exposing unpublished work
+- **Financial Planning**: Query your financial documents without exposing sensitive data to third parties
+
+### For Enterprises
+
+- **HIPAA-Compliant Healthcare**: Build personalized patient assistants that keep PHI (Protected Health Information) encrypted and local
+- **Legal Discovery**: Train on case files for private legal research - attorney-client privilege preserved
+- **Financial Services (SOC 2/PCI)**: Customer data never leaves your infrastructure, enabling AI without compliance violations
+- **Defense & Government**: Classified document analysis with zero data exfiltration risk
+- **Pharmaceutical R&D**: Query proprietary research without exposing IP to cloud providers
+- **HR & Recruiting**: Search confidential employee records and candidate data privately
+- **Customer Support**: Per-customer AI assistants trained on their specific history and context
+
+### Why Enterprises Choose WDVA
+
+| Requirement | Traditional Cloud AI | WDVA |
+|-------------|---------------------|------|
+| Data Residency | Data leaves premises | Data never leaves |
+| Compliance (GDPR, HIPAA, SOC 2) | Complex DPAs required | Built-in compliance |
+| Data Deletion | Uncertain, may persist in training | Cryptographic guarantee |
+| Audit Trail | Provider-dependent | Full local control |
+| Offline Operation | Requires internet | Works completely offline |
+| Per-User Isolation | Shared models | Isolated encrypted adapters |
 
 ## 📖 Examples
 
@@ -128,19 +151,74 @@ answer = wdva.query("What did I write about privacy?")
 └─────────────────────────────────────────┘
 ```
 
+## 🔗 LangChain Integration
+
+WDVA integrates seamlessly with the LangChain ecosystem for building privacy-preserving AI applications.
+
+```bash
+# Install with LangChain support
+pip install wdva[langchain]       # Core LangChain
+pip install wdva[langchain-full]  # Full RAG support with embeddings
+```
+
+### Quick Example: Private RAG
+
+```python
+from wdva.langchain_integration import (
+    WDVAChatModel,
+    WDVADocumentLoader,
+    WDVAEmbeddings,
+    create_wdva_chain
+)
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# 1. Load your private documents (locally)
+loader = WDVADocumentLoader(file_paths=["confidential.pdf", "notes.txt"])
+docs = loader.load()
+
+# 2. Create local embeddings (no cloud API!)
+embeddings = WDVAEmbeddings()
+chunks = RecursiveCharacterTextSplitter(chunk_size=1000).split_documents(docs)
+vectorstore = FAISS.from_documents(chunks, embeddings)
+
+# 3. Query with your encrypted adapter
+chain = create_wdva_chain(
+    adapter_path="my_adapter.wdva",
+    encryption_key="your-64-char-hex-key",
+    retriever=vectorstore.as_retriever()
+)
+
+response = chain.invoke({"query": "What are the key findings?"})
+```
+
+### Available Components
+
+| Component | Description |
+|-----------|-------------|
+| `WDVALLM` | Standard LLM interface for LangChain chains |
+| `WDVAChatModel` | Chat model with message history support |
+| `WDVADocumentLoader` | Load PDF, TXT, HTML, JSON documents |
+| `WDVAEmbeddings` | Privacy-preserving local embeddings |
+| `WDVACallbackHandler` | Privacy-aware logging and monitoring |
+
+See [docs/LANGCHAIN_REVIEW.md](docs/LANGCHAIN_REVIEW.md) for the complete integration guide.
+
 ## 🔧 Extending WDVA
 
 See [docs/EXTENDING.md](docs/EXTENDING.md) for:
 - Custom data sources
 - Different model backends
 - Custom encryption schemes
-- Integration with existing systems
+- LangChain integration patterns
+- FastAPI deployment
 
 ## 📚 Documentation
 
 - [CONCEPT.md](docs/CONCEPT.md) - Understanding WDVA
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Technical deep dive
 - [EXTENDING.md](docs/EXTENDING.md) - How to extend WDVA
+- [LANGCHAIN_REVIEW.md](docs/LANGCHAIN_REVIEW.md) - LangChain integration guide
 
 ## 🤝 Contributing
 

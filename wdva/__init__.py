@@ -19,7 +19,26 @@ __license__ = "Apache-2.0"
 
 __all__ = [
     "WDVA",
-    "EncryptedAdapter", 
+    "EncryptedAdapter",
     "LocalInference",
     "__version__",
 ]
+
+# LangChain integration (lazy import to avoid dependency requirement)
+def __getattr__(name: str):
+    """Lazy import LangChain components."""
+    langchain_exports = {
+        "WDVALLM",
+        "WDVAChatModel",
+        "WDVADocumentLoader",
+        "WDVAEmbeddings",
+        "WDVACallbackHandler",
+        "create_wdva_chain",
+        "create_conversational_chain",
+    }
+
+    if name in langchain_exports:
+        from wdva import langchain_integration
+        return getattr(langchain_integration, name)
+
+    raise AttributeError(f"module 'wdva' has no attribute '{name}'")

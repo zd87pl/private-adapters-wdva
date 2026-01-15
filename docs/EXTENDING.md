@@ -209,28 +209,111 @@ def train_dora_advanced(
 
 ### LangChain Integration
 
-```python
-from langchain.llms.base import LLM
-from wdva import WDVA
+WDVA provides comprehensive LangChain integration. Install with:
 
-class WDVALLM(LLM):
-    def __init__(self, wdva: WDVA):
-        self.wdva = wdva
-    
-    def _call(self, prompt: str, stop: list = None) -> str:
-        return self.wdva.query(prompt)
-    
-    @property
-    def _llm_type(self) -> str:
-        return "wdva"
-
-# Use with LangChain
-wdva = WDVA(adapter_path="my_adapter.wdva", encryption_key="...")
-llm = WDVALLM(wdva)
-
-from langchain.chains import LLMChain
-chain = LLMChain(llm=llm, prompt=my_prompt)
+```bash
+pip install wdva[langchain]       # Core LangChain support
+pip install wdva[langchain-full]  # Full RAG support with embeddings
 ```
+
+#### Basic LLM Usage
+
+```python
+from wdva.langchain_integration import WDVALLM
+from langchain_core.prompts import PromptTemplate
+
+# Create WDVA-powered LLM
+llm = WDVALLM(
+    adapter_path="my_adapter.wdva",
+    encryption_key="your-64-char-hex-key",
+    max_tokens=512,
+    temperature=0.7
+)
+
+# Use with LCEL (LangChain Expression Language)
+prompt = PromptTemplate.from_template("Question: {question}\nAnswer:")
+chain = prompt | llm
+response = chain.invoke({"question": "What is in my documents?"})
+```
+
+#### Chat Model with Message History
+
+```python
+from wdva.langchain_integration import WDVAChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
+
+chat = WDVAChatModel(
+    adapter_path="adapter.wdva",
+    encryption_key="...",
+    system_prompt="You are a helpful assistant."
+)
+
+messages = [
+    SystemMessage(content="You are analyzing private documents."),
+    HumanMessage(content="What are the key findings?")
+]
+
+response = chat.invoke(messages)
+```
+
+#### Private RAG System
+
+```python
+from wdva.langchain_integration import (
+    WDVAChatModel,
+    WDVADocumentLoader,
+    WDVAEmbeddings,
+    create_wdva_chain
+)
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# 1. Load private documents (locally)
+loader = WDVADocumentLoader(
+    file_paths=["research.pdf", "notes.txt"],
+    metadata={"project": "private_research"}
+)
+docs = loader.load()
+
+# 2. Split into chunks
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000)
+chunks = splitter.split_documents(docs)
+
+# 3. Create local embeddings (no cloud API!)
+embeddings = WDVAEmbeddings()
+vectorstore = FAISS.from_documents(chunks, embeddings)
+
+# 4. Create retrieval chain with your trained adapter
+qa_chain = create_wdva_chain(
+    adapter_path="trained_adapter.wdva",
+    encryption_key="...",
+    retriever=vectorstore.as_retriever()
+)
+
+# 5. Query privately
+response = qa_chain.invoke({"query": "What are the key findings?"})
+```
+
+#### Conversational Chain with Memory
+
+```python
+from wdva.langchain_integration import create_conversational_chain
+from langchain.memory import ConversationBufferMemory
+
+memory = ConversationBufferMemory(return_messages=True)
+chain = create_conversational_chain(
+    adapter_path="adapter.wdva",
+    encryption_key="...",
+    retriever=vectorstore.as_retriever(),
+    memory=memory
+)
+
+# Multi-turn conversation
+response1 = chain.invoke({"question": "What is the main topic?"})
+response2 = chain.invoke({"question": "Tell me more about that."})
+```
+
+See `docs/LANGCHAIN_REVIEW.md` for the full integration guide and advanced patterns.
 
 ### FastAPI Integration
 
