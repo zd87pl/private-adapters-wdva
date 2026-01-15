@@ -457,6 +457,324 @@ def test_document_loader_metadata():
 
 ---
 
+## Further LangChain Integration Opportunities
+
+The following integrations represent the next frontier for WDVA in the LangChain ecosystem:
+
+### 1. LangGraph Multi-Agent Systems
+
+Build complex multi-agent workflows with privacy guarantees:
+
+```python
+# Future: Private multi-agent system
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class PrivateAgentState(TypedDict):
+    messages: list
+    documents: list
+    current_agent: str
+
+# Each agent has its own encrypted adapter
+research_agent = WDVAChatModel(adapter_path="research.wdva", encryption_key=key1)
+analysis_agent = WDVAChatModel(adapter_path="analysis.wdva", encryption_key=key2)
+summary_agent = WDVAChatModel(adapter_path="summary.wdva", encryption_key=key3)
+
+def create_private_workflow():
+    workflow = StateGraph(PrivateAgentState)
+    workflow.add_node("research", research_agent)
+    workflow.add_node("analyze", analysis_agent)
+    workflow.add_node("summarize", summary_agent)
+    # ... define edges
+    return workflow.compile()
+```
+
+**Use Case:** Legal discovery with specialized agents for document review, case law research, and brief writing.
+
+### 2. LangChain Hub Integration
+
+Publish privacy-preserving prompt templates:
+
+```python
+# Future: Share prompts without exposing adapter details
+from langchain import hub
+
+# Pull community prompts that work with WDVA
+prompt = hub.pull("wdva/private-rag-qa")
+
+# Push your own privacy-aware prompts
+hub.push("myorg/hipaa-compliant-qa", my_prompt, tags=["wdva", "healthcare"])
+```
+
+### 3. LangChain Expression Language (LCEL) Primitives
+
+Custom LCEL components for privacy workflows:
+
+```python
+# Future: Privacy-aware LCEL components
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+
+# Automatic encryption boundary
+class EncryptionBoundary(Runnable):
+    """Ensures data is encrypted before leaving local context."""
+
+    def invoke(self, input, config=None):
+        # Verify no PII leakage
+        self._check_data_classification(input)
+        return input
+
+# Privacy-preserving parallel execution
+chain = (
+    RunnablePassthrough()
+    | EncryptionBoundary()
+    | {
+        "local_answer": wdva_chat,
+        "context": retriever,
+    }
+    | format_response
+)
+```
+
+### 4. Custom Tool Integration
+
+Privacy-aware tools for LangChain agents:
+
+```python
+# Future: WDVA-compatible tools
+from langchain_core.tools import tool
+
+@tool
+def search_private_knowledge_base(query: str) -> str:
+    """Search the user's private knowledge base."""
+    # Uses local embeddings, never sends data externally
+    results = private_vectorstore.similarity_search(query, k=3)
+    return "\n".join([r.page_content for r in results])
+
+@tool
+def summarize_private_document(doc_path: str) -> str:
+    """Summarize a private document using WDVA."""
+    loader = WDVADocumentLoader(file_paths=[doc_path])
+    doc = loader.load()[0]
+    return wdva_chat.invoke([
+        HumanMessage(content=f"Summarize: {doc.page_content[:2000]}")
+    ]).content
+
+# Use in agent
+tools = [search_private_knowledge_base, summarize_private_document]
+agent = create_react_agent(wdva_chat, tools)
+```
+
+### 5. LangChain Evaluation Framework
+
+Privacy-preserving model evaluation:
+
+```python
+# Future: Evaluate WDVA models without exposing test data
+from langchain.evaluation import load_evaluator
+
+# Local evaluation - no data sent to cloud
+evaluator = load_evaluator(
+    "labeled_criteria",
+    criteria="relevance",
+    llm=wdva_chat  # Use WDVA as the judge
+)
+
+# Compare base vs. adapter performance
+results = []
+for example in test_set:
+    base_response = wdva.query_base(example["question"])
+    adapter_response = wdva.query(example["question"])
+
+    results.append({
+        "base_score": evaluator.evaluate_strings(
+            prediction=base_response,
+            reference=example["answer"]
+        ),
+        "adapter_score": evaluator.evaluate_strings(
+            prediction=adapter_response,
+            reference=example["answer"]
+        )
+    })
+```
+
+### 6. Caching with Privacy
+
+LangChain caching that respects encryption:
+
+```python
+# Future: Encrypted response caching
+from langchain.cache import SQLiteCache
+from wdva.crypto import EncryptedAdapter
+
+class EncryptedCache(SQLiteCache):
+    """Cache responses with encryption at rest."""
+
+    def __init__(self, encryption_key: bytes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.adapter = EncryptedAdapter(encryption_key)
+
+    def update(self, prompt, response):
+        encrypted = self.adapter._encrypt_data(response.encode())
+        super().update(prompt, encrypted)
+
+    def lookup(self, prompt):
+        encrypted = super().lookup(prompt)
+        if encrypted:
+            return self.adapter._decrypt_data(encrypted).decode()
+        return None
+
+# Use encrypted cache
+set_llm_cache(EncryptedCache(cache_key, database_path="cache.db"))
+```
+
+### 7. Retriever Implementations
+
+Specialized retrievers for private data:
+
+```python
+# Future: Privacy-aware retrievers
+from langchain_core.retrievers import BaseRetriever
+
+class WDVAParentDocumentRetriever(BaseRetriever):
+    """Retriever that maintains document relationships privately."""
+
+    def __init__(self, child_vectorstore, parent_store, encryption_key):
+        self.child_vs = child_vectorstore
+        self.parent_store = parent_store  # Encrypted document store
+        self.key = encryption_key
+
+    def _get_relevant_documents(self, query: str) -> List[Document]:
+        # Find relevant chunks
+        child_docs = self.child_vs.similarity_search(query)
+
+        # Retrieve full parent documents (decrypted on-the-fly)
+        parent_ids = [d.metadata["parent_id"] for d in child_docs]
+        return [
+            self._decrypt_parent(pid)
+            for pid in set(parent_ids)
+        ]
+
+class WDVATimeWeightedRetriever(BaseRetriever):
+    """Retriever that weights by recency for private documents."""
+    pass
+
+class WDVAMultiQueryRetriever(BaseRetriever):
+    """Generate multiple queries locally for better retrieval."""
+    pass
+```
+
+### 8. Output Parsers for Structured Privacy
+
+Parse structured data while maintaining privacy:
+
+```python
+# Future: Privacy-aware output parsing
+from langchain_core.output_parsers import JsonOutputParser
+from pydantic import BaseModel, Field
+
+class PrivateEntityExtraction(BaseModel):
+    """Extract entities without exposing raw text."""
+    entities: list[str] = Field(description="Named entities found")
+    entity_types: list[str] = Field(description="Types of entities")
+    # Note: raw_text deliberately excluded
+
+class RedactingOutputParser(JsonOutputParser):
+    """Parser that automatically redacts sensitive fields."""
+
+    redact_patterns = [
+        r'\b\d{3}-\d{2}-\d{4}\b',  # SSN
+        r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',  # Email
+    ]
+
+    def parse(self, text: str) -> dict:
+        result = super().parse(text)
+        return self._redact_sensitive(result)
+```
+
+### 9. Memory Systems
+
+Privacy-preserving conversation memory:
+
+```python
+# Future: Encrypted conversation memory
+from langchain.memory import ConversationBufferMemory
+
+class EncryptedConversationMemory(ConversationBufferMemory):
+    """Store conversation history with encryption."""
+
+    def __init__(self, encryption_key: bytes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.adapter = EncryptedAdapter(encryption_key)
+
+    def save_context(self, inputs, outputs):
+        # Encrypt before storing
+        encrypted_inputs = self._encrypt_dict(inputs)
+        encrypted_outputs = self._encrypt_dict(outputs)
+        super().save_context(encrypted_inputs, encrypted_outputs)
+
+    def load_memory_variables(self, inputs):
+        # Decrypt when loading
+        encrypted = super().load_memory_variables(inputs)
+        return self._decrypt_dict(encrypted)
+
+class WDVASummaryMemory(BaseChatMemory):
+    """Summarize conversations privately using WDVA."""
+
+    def __init__(self, wdva_chat: WDVAChatModel, *args, **kwargs):
+        self.summarizer = wdva_chat
+        # Summaries generated locally, never sent to cloud
+```
+
+### 10. Tracing and Debugging (Privacy-First)
+
+Local tracing without cloud dependencies:
+
+```python
+# Future: Privacy-preserving tracing
+class WDVATracer:
+    """Local tracing that never sends data externally."""
+
+    def __init__(self, log_path: str, encryption_key: Optional[bytes] = None):
+        self.log_path = log_path
+        self.encryption_key = encryption_key
+
+    def trace_chain(self, chain, input_data):
+        trace = {
+            "timestamp": datetime.now().isoformat(),
+            "chain_type": type(chain).__name__,
+            "input_hash": hashlib.sha256(str(input_data).encode()).hexdigest(),
+            # Note: actual input/output NOT logged
+            "latency_ms": None,
+            "token_count_estimate": None,
+        }
+
+        start = time.time()
+        result = chain.invoke(input_data)
+        trace["latency_ms"] = (time.time() - start) * 1000
+        trace["token_count_estimate"] = len(str(result)) // 4
+
+        self._log_trace(trace)
+        return result
+```
+
+---
+
+## Integration Priority Matrix
+
+| Integration | Complexity | Privacy Value | User Demand | Priority |
+|-------------|------------|---------------|-------------|----------|
+| LangGraph Agents | High | High | Medium | P1 |
+| Streaming Support | Medium | Low | High | P1 |
+| Encrypted Memory | Medium | High | Medium | P1 |
+| LangServe Deployment | Low | Medium | High | P2 |
+| Custom Tools | Medium | High | Medium | P2 |
+| Structured Output | Low | Medium | Medium | P2 |
+| LangSmith (Privacy) | High | High | Low | P3 |
+| LangChain Hub | Low | Low | Low | P3 |
+| Evaluation Framework | Medium | Medium | Low | P3 |
+
+---
+
 ## Summary
 
 The implemented LangChain enhancements transform WDVA from a standalone privacy tool into a first-class citizen of the LangChain ecosystem. Key improvements include:

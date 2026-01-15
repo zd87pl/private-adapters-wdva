@@ -115,11 +115,10 @@ if _langchain_core_available:
         max_tokens: int = 512
         temperature: float = 0.7
 
-        _wdva_instance: Any = None
+        # Private instance cache (not a Pydantic field)
+        _wdva_instance: Optional[Any] = None
 
-        class Config:
-            """Pydantic config."""
-            arbitrary_types_allowed = True
+        model_config = {"arbitrary_types_allowed": True}
 
         def __init__(
             self,
@@ -149,6 +148,8 @@ if _langchain_core_available:
                 temperature=temperature,
                 **kwargs,
             )
+            # Initialize private attribute after super().__init__
+            object.__setattr__(self, '_wdva_instance', None)
 
         def _get_wdva(self) -> Any:
             """Lazy-load WDVA instance."""
@@ -272,11 +273,10 @@ if _langchain_core_available:
         temperature: float = 0.7
         system_prompt: Optional[str] = None
 
-        _wdva_instance: Any = None
+        # Private instance cache (not a Pydantic field)
+        _wdva_instance: Optional[Any] = None
 
-        class Config:
-            """Pydantic config."""
-            arbitrary_types_allowed = True
+        model_config = {"arbitrary_types_allowed": True}
 
         def __init__(
             self,
@@ -309,6 +309,8 @@ if _langchain_core_available:
                 system_prompt=system_prompt,
                 **kwargs,
             )
+            # Initialize private attribute after super().__init__
+            object.__setattr__(self, '_wdva_instance', None)
 
         def _get_wdva(self) -> Any:
             """Lazy-load WDVA instance."""
@@ -628,10 +630,6 @@ if _langchain_core_available:
             device: Device to run on (auto-detected)
         """
 
-        model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-        _model: Any = None
-        _device: str = "cpu"
-
         def __init__(
             self,
             model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
@@ -645,6 +643,7 @@ if _langchain_core_available:
                 device: Device to use (auto-detected if None)
             """
             self.model_name = model_name
+            self._model: Any = None
             self._device = device or self._detect_device()
 
         def _detect_device(self) -> str:
@@ -925,12 +924,32 @@ def create_conversational_chain(
 # Module Exports
 # =============================================================================
 
-__all__ = [
-    "WDVALLM",
-    "WDVAChatModel",
-    "WDVADocumentLoader",
-    "WDVAEmbeddings",
-    "WDVACallbackHandler",
-    "create_wdva_chain",
-    "create_conversational_chain",
-]
+# Only export classes if LangChain is available
+if _langchain_core_available:
+    __all__ = [
+        "WDVALLM",
+        "WDVAChatModel",
+        "WDVADocumentLoader",
+        "WDVAEmbeddings",
+        "WDVACallbackHandler",
+        "create_wdva_chain",
+        "create_conversational_chain",
+    ]
+else:
+    __all__ = []
+
+    # Provide helpful error for missing LangChain
+    def _langchain_not_available(*args: Any, **kwargs: Any) -> None:
+        raise ImportError(
+            "LangChain integration requires langchain-core. "
+            "Install with: pip install wdva[langchain]"
+        )
+
+    # Create placeholder classes that raise helpful errors
+    WDVALLM = _langchain_not_available  # type: ignore
+    WDVAChatModel = _langchain_not_available  # type: ignore
+    WDVADocumentLoader = _langchain_not_available  # type: ignore
+    WDVAEmbeddings = _langchain_not_available  # type: ignore
+    WDVACallbackHandler = _langchain_not_available  # type: ignore
+    create_wdva_chain = _langchain_not_available  # type: ignore
+    create_conversational_chain = _langchain_not_available  # type: ignore
