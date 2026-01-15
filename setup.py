@@ -67,6 +67,19 @@ setup(
             "requests>=2.31.0",
             "PyPDF2>=3.0.0",
         ],
+        # LangChain integration (core)
+        "langchain": [
+            "langchain-core>=0.1.0",
+            "langchain>=0.1.0",
+        ],
+        # LangChain integration (full with RAG support)
+        "langchain-full": [
+            "langchain-core>=0.1.0",
+            "langchain>=0.1.0",
+            "langchain-community>=0.1.0",
+            "sentence-transformers>=2.2.0",
+            "faiss-cpu>=1.7.0",
+        ],
         # Development dependencies
         "dev": [
             "pytest>=7.0.0",
@@ -84,6 +97,10 @@ setup(
             "PyPDF2>=3.0.0",
             "zstandard>=0.22.0",
             "hf-transfer>=0.1.0",
+            "langchain-core>=0.1.0",
+            "langchain>=0.1.0",
+            "langchain-community>=0.1.0",
+            "sentence-transformers>=2.2.0",
         ],
     },
     
